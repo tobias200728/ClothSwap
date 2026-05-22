@@ -13,6 +13,9 @@ import {
 
 import { StatusBar } from 'expo-status-bar';
 
+// LOGIN
+import LoginScreen from './components/LoginScreen';
+
 // Components
 import TabBar from './components/TabBar';
 import SwipeScreen from './components/SwipeScreen';
@@ -30,6 +33,10 @@ import {
 } from './data';
 
 export default function App() {
+  // LOGIN STATE
+  const [isLoggedIn, setIsLoggedIn] =
+    useState(false);
+
   const [activeTab, setActiveTab] =
     useState('swipe');
 
@@ -52,6 +59,7 @@ export default function App() {
   const [userProfile, setUserProfile] =
     useState({
       name: 'Max Mustermann',
+
       location:
         'Berlin, Deutschland',
     });
@@ -70,6 +78,12 @@ export default function App() {
   // Chat Navigation State
   const [activeChatId, setActiveChatId] =
     useState(null);
+
+  // LOGIN HANDLER
+
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
 
   // HANDLERS
 
@@ -272,6 +286,16 @@ export default function App() {
 
     setDetailModalVisible(true);
   };
+
+  // LOGIN SCREEN
+
+  if (!isLoggedIn) {
+    return (
+      <LoginScreen
+        onLogin={handleLogin}
+      />
+    );
+  }
 
   // RENDER CONTENT
 
