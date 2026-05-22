@@ -1,0 +1,17 @@
+# Node modules
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+
+# Bundler
+web-build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System
+.DS_Store

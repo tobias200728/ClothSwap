@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "ClothSwap",
+    "slug": "clothswap-frontend",
+    "version": "1.0.0",
+    "platforms": ["ios", "android", "web"],
+    "sdkVersion": "49.0.0",
+    "orientation": "portrait",
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    }
+  }
+}
