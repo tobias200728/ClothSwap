@@ -1,72 +1,192 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable, Platform } from 'react-native';
+
+import {
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  Platform,
+} from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 
-export default function TabBar({ activeTab, setActiveTab }) {
+import { BlurView } from 'expo-blur';
+
+export default function TabBar({
+  activeTab,
+  setActiveTab,
+  darkMode,
+}) {
   const tabs = [
-    { id: 'swipe', label: 'Swipe', iconOutline: 'home-outline', iconFilled: 'home' },
-    { id: 'favorites', label: 'Favoriten', iconOutline: 'heart-outline', iconFilled: 'heart' },
-    { id: 'chat', label: 'Chat', iconOutline: 'chatbubble-outline', iconFilled: 'chatbubble' },
-    { id: 'profile', label: 'Profil', iconOutline: 'person-outline', iconFilled: 'person' },
+    {
+      id: 'swipe',
+      label: 'Swipe',
+      iconOutline:
+        'flame-outline',
+      iconFilled: 'flame',
+    },
+
+    {
+      id: 'favorites',
+      label: 'Likes',
+      iconOutline:
+        'heart-outline',
+      iconFilled: 'heart',
+    },
+
+    {
+      id: 'chat',
+      label: 'Chats',
+      iconOutline:
+        'chatbubble-outline',
+      iconFilled:
+        'chatbubble',
+    },
+
+    {
+      id: 'profile',
+      label: 'Profil',
+      iconOutline:
+        'person-outline',
+      iconFilled: 'person',
+    },
   ];
 
+  const colors = darkMode
+    ? {
+        bg: '#121212',
+        text: '#fff',
+        inactive: '#8d8d93',
+        accent: '#ff8c69',
+        blur: 'dark',
+      }
+    : {
+        bg: '#fff7f2',
+        text: '#111',
+        inactive: '#8e8e93',
+        accent: '#ff7a59',
+        blur: 'light',
+      };
+
   return (
-    <View style={styles.container}>
+    <BlurView
+      intensity={90}
+      tint={colors.blur}
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            darkMode
+              ? 'rgba(18,18,18,0.92)'
+              : 'rgba(255,247,242,0.92)',
+        },
+      ]}
+    >
       {tabs.map((tab) => {
-        const isActive = activeTab === tab.id;
-        const iconName = isActive ? tab.iconFilled : tab.iconOutline;
-        
+        const isActive =
+          activeTab === tab.id;
+
         return (
           <Pressable
             key={tab.id}
             style={styles.tabItem}
-            onPress={() => setActiveTab(tab.id)}
+            onPress={() =>
+              setActiveTab(tab.id)
+            }
           >
-            <Ionicons
-              name={iconName}
-              size={24}
-              color={isActive ? '#f53b75' : '#8e8e93'}
-            />
-            <Text style={[styles.tabLabel, isActive && styles.activeTabLabel]}>
+            <View
+              style={[
+                styles.iconContainer,
+
+                isActive && {
+                  backgroundColor:
+                    colors.accent +
+                    '20',
+                },
+              ]}
+            >
+              <Ionicons
+                name={
+                  isActive
+                    ? tab.iconFilled
+                    : tab.iconOutline
+                }
+                size={22}
+                color={
+                  isActive
+                    ? colors.accent
+                    : colors.inactive
+                }
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.tabLabel,
+
+                {
+                  color: isActive
+                    ? colors.accent
+                    : colors.inactive,
+                },
+              ]}
+            >
               {tab.label}
             </Text>
           </Pressable>
         );
       })}
-    </View>
+    </BlurView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: Platform.OS === 'ios' ? 88 : 64,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e5ea',
-    backgroundColor: '#ffffff',
-    justifyContent: 'space-around',
+
+    height:
+      Platform.OS === 'ios'
+        ? 92
+        : 72,
+
+    paddingBottom:
+      Platform.OS === 'ios'
+        ? 28
+        : 10,
+
+    paddingTop: 10,
+
+    justifyContent:
+      'space-around',
+
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-    paddingTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 8,
+
+    borderTopWidth: 0,
   },
+
   tabItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
     flex: 1,
+
+    alignItems: 'center',
   },
+
+  iconContainer: {
+    width: 40,
+
+    height: 40,
+
+    borderRadius: 20,
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+  },
+
   tabLabel: {
-    fontSize: 10,
-    color: '#8e8e93',
     marginTop: 4,
-    fontWeight: '500',
-  },
-  activeTabLabel: {
-    color: '#f53b75',
+
+    fontSize: 11,
+
     fontWeight: '600',
   },
 });

@@ -1,4 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+} from 'react';
+
 import {
   StyleSheet,
   Text,
@@ -9,182 +14,324 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 
-export default function ChatScreen({ chats, onSendMessage, onMarkAsRead, activeChatId, setActiveChatId }) {
-  const [inputText, setInputText] = useState('');
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const COLORS = {
+  light: {
+    bg: '#fff7f2',
+    card: '#ffffff',
+    text: '#1a1a1a',
+    sub: '#777777',
+    accent: '#ff7a59',
+    border: '#f2d9cf',
+    input: '#fffaf7',
+  },
+
+  dark: {
+    bg: '#121212',
+    card: '#1e1e1f',
+    text: '#ffffff',
+    sub: '#aaaaaa',
+    accent: '#ff8c69',
+    border: '#2f2f32',
+    input: '#2a2a2d',
+  },
+};
+
+export default function ChatScreen({
+  chats,
+  onSendMessage,
+  onMarkAsRead,
+  activeChatId,
+  setActiveChatId,
+  darkMode,
+}) {
+  const colors = darkMode
+    ? COLORS.dark
+    : COLORS.light;
+
+  const [inputText, setInputText] =
+    useState('');
+
   const scrollViewRef = useRef(null);
 
-  const activeChat = chats.find((c) => c.id === activeChatId);
+  const activeChat = chats.find(
+    (c) => c.id === activeChatId
+  );
 
-  // Mark active chat as read when opened
   useEffect(() => {
     if (activeChatId) {
       onMarkAsRead(activeChatId);
     }
   }, [activeChatId]);
 
-  // Scroll to bottom of chat details
-  useEffect(() => {
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollToEnd({ animated: true });
-    }
-  }, [activeChat?.messages]);
-
-  const handleSend = () => {
-    if (!inputText.trim()) return;
-    const text = inputText.trim();
-    setInputText('');
-    
-    onSendMessage(activeChatId, text);
-    
-    // Auto-respond simulation
-    setTimeout(() => {
-      let replyText = 'Klingt super! Wollen wir uns treffen oder verschicken?';
-      if (text.toLowerCase().includes('hallo') || text.toLowerCase().includes('hi')) {
-        replyText = 'Hi! Ja, gerne. Wie wollen wir vorgehen?';
-      } else if (text.toLowerCase().includes('preis') || text.toLowerCase().includes('kosten') || text.toLowerCase().includes('bieten')) {
-        replyText = 'Ich tausche am liebsten gegen etwas aus deiner Liste! Hast du neue Sachen hochgeladen?';
-      } else if (text.toLowerCase().includes('wo') || text.toLowerCase().includes('treffen') || text.toLowerCase().includes('zeit')) {
-        replyText = 'Ich wohne in Berlin. Wir können uns gerne am Wochenende treffen!';
-      } else if (text.toLowerCase().includes('zustand') || text.toLowerCase().includes('foto')) {
-        replyText = 'Der Zustand ist wie beschrieben. Ich kann dir später noch ein Bild schicken.';
-      }
-      
-      onSendMessage(activeChatId, replyText, 'them');
-    }, 1500);
-  };
-
-  const handleBack = () => {
-    setActiveChatId(null);
-  };
-
-  // If in list view
   if (!activeChatId) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Chats</Text>
-        </View>
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            backgroundColor:
+              colors.bg,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.title,
+            { color: colors.text },
+          ]}
+        >
+          Chats
+        </Text>
 
-        <ScrollView style={styles.chatList} showsVerticalScrollIndicator={false}>
+        <ScrollView>
           {chats.map((chat) => (
             <Pressable
               key={chat.id}
-              style={styles.chatRow}
-              onPress={() => setActiveChatId(chat.id)}
+              style={[
+                styles.chatRow,
+                {
+                  backgroundColor:
+                    colors.card,
+
+                  borderColor:
+                    colors.border,
+                },
+              ]}
+              onPress={() =>
+                setActiveChatId(chat.id)
+              }
             >
-              <View style={styles.avatarContainer}>
-                <View style={[styles.avatar, { backgroundColor: chat.avatarColor }]}>
-                  <Text style={styles.avatarText}>{chat.name[0]}</Text>
-                </View>
-                {chat.unreadCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{chat.unreadCount}</Text>
-                  </View>
-                )}
+              <View
+                style={[
+                  styles.avatar,
+                  {
+                    backgroundColor:
+                      colors.accent,
+                  },
+                ]}
+              >
+                <Text
+                  style={
+                    styles.avatarText
+                  }
+                >
+                  {chat.name[0]}
+                </Text>
               </View>
 
-              <View style={styles.chatInfo}>
-                <View style={styles.chatHeaderRow}>
-                  <Text style={styles.chatName}>{chat.name}</Text>
-                  <Text style={[styles.chatTime, chat.unreadCount > 0 && styles.activeTime]}>
-                    {chat.time}
-                  </Text>
-                </View>
+              <View style={{ flex: 1 }}>
                 <Text
-                  style={[styles.lastMessage, chat.unreadCount > 0 && styles.unreadMessage]}
+                  style={[
+                    styles.chatName,
+                    {
+                      color:
+                        colors.text,
+                    },
+                  ]}
+                >
+                  {chat.name}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.lastMessage,
+                    {
+                      color:
+                        colors.sub,
+                    },
+                  ]}
                   numberOfLines={1}
                 >
                   {chat.lastMessage}
                 </Text>
-                <Text style={styles.itemTag}>{chat.item}</Text>
               </View>
             </Pressable>
           ))}
         </ScrollView>
-      </View>
+      </SafeAreaView>
     );
   }
 
-  // Active chat view
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.activeContainer}
+      style={[
+        styles.activeContainer,
+        {
+          backgroundColor:
+            colors.bg,
+        },
+      ]}
+      behavior={
+        Platform.OS === 'ios'
+          ? 'padding'
+          : undefined
+      }
     >
-      {/* Active Chat Header */}
-      <View style={styles.activeHeader}>
-        <Pressable style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="chevron-back" size={24} color="#f53b75" />
-          <Text style={styles.backButtonText}>Zurück</Text>
-        </Pressable>
-        <View style={styles.activeHeaderTitleContainer}>
-          <Text style={styles.activeHeaderName}>{activeChat.name}</Text>
-          <Text style={styles.activeHeaderItem}>{activeChat.item}</Text>
-        </View>
-        <View style={styles.headerRightSpacer} />
-      </View>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View
+          style={[
+            styles.activeHeader,
+            {
+              backgroundColor:
+                colors.card,
 
-      {/* Messages Scroll Area */}
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.messageScrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {activeChat.messages.map((msg) => {
-          const isMe = msg.sender === 'me';
-          return (
-            <View
-              key={msg.id}
-              style={[
-                styles.messageRow,
-                isMe ? styles.messageRowMe : styles.messageRowThem,
-              ]}
-            >
-              {!isMe && (
-                <View style={[styles.miniAvatar, { backgroundColor: activeChat.avatarColor }]}>
-                  <Text style={styles.miniAvatarText}>{activeChat.name[0]}</Text>
-                </View>
-              )}
-              <View
-                style={[
-                  styles.bubble,
-                  isMe ? styles.bubbleMe : styles.bubbleThem,
-                ]}
-              >
-                <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextThem]}>
-                  {msg.text}
-                </Text>
-                {msg.time && (
-                  <Text style={[styles.msgTime, isMe ? styles.msgTimeMe : styles.msgTimeThem]}>
-                    {msg.time}
-                  </Text>
-                )}
-              </View>
-            </View>
-          );
-        })}
-      </ScrollView>
-
-      {/* Input Bar */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Nachricht schreiben..."
-          placeholderTextColor="#999"
-          value={inputText}
-          onChangeText={setInputText}
-          onSubmitEditing={handleSend}
-        />
-        <Pressable
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-          onPress={handleSend}
-          disabled={!inputText.trim()}
+              borderBottomColor:
+                colors.border,
+            },
+          ]}
         >
-          <Ionicons name="send" size={18} color="#fff" />
-        </Pressable>
-      </View>
+          <Pressable
+            onPress={() =>
+              setActiveChatId(null)
+            }
+          >
+            <Ionicons
+              name="chevron-back"
+              size={28}
+              color={colors.accent}
+            />
+          </Pressable>
+
+          <Text
+            style={[
+              styles.activeName,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
+            {activeChat.name}
+          </Text>
+
+          <View style={{ width: 28 }} />
+        </View>
+
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={{
+            padding: 18,
+            paddingBottom: 40,
+          }}
+        >
+          {activeChat.messages.map(
+            (msg) => {
+              const isMe =
+                msg.sender === 'me';
+
+              return (
+                <View
+                  key={msg.id}
+                  style={[
+                    styles.msgRow,
+                    {
+                      alignSelf: isMe
+                        ? 'flex-end'
+                        : 'flex-start',
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.bubble,
+                      {
+                        backgroundColor:
+                          isMe
+                            ? colors.accent
+                            : colors.card,
+
+                        borderColor:
+                          colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: isMe
+                          ? '#fff'
+                          : colors.text,
+
+                        fontSize: 15,
+                      }}
+                    >
+                      {msg.text}
+                    </Text>
+                  </View>
+                </View>
+              );
+            }
+          )}
+        </ScrollView>
+
+        <View
+          style={[
+            styles.inputBar,
+            {
+              backgroundColor:
+                colors.card,
+
+              borderTopColor:
+                colors.border,
+            },
+          ]}
+        >
+          <TextInput
+            value={inputText}
+            onChangeText={
+              setInputText
+            }
+            placeholder="Nachricht..."
+            placeholderTextColor={
+              colors.sub
+            }
+            style={[
+              styles.input,
+              {
+                backgroundColor:
+                  colors.input,
+
+                color: colors.text,
+
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          />
+
+          <Pressable
+            style={[
+              styles.sendBtn,
+              {
+                backgroundColor:
+                  colors.accent,
+              },
+            ]}
+            onPress={() => {
+              if (
+                !inputText.trim()
+              )
+                return;
+
+              onSendMessage(
+                activeChatId,
+                inputText
+              );
+
+              setInputText('');
+            }}
+          >
+            <Ionicons
+              name="send"
+              size={18}
+              color="#fff"
+            />
+          </Pressable>
+        </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }
@@ -192,242 +339,104 @@ export default function ChatScreen({ chats, onSendMessage, onMarkAsRead, activeC
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: 18,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f2',
-  },
-  headerTitle: {
-    fontSize: 26,
+
+  title: {
+    fontSize: 32,
     fontWeight: '800',
-    color: '#1a1a1a',
+    marginVertical: 18,
   },
-  chatList: {
-    flex: 1,
-  },
+
   chatRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8f8fa',
     alignItems: 'center',
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 14,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
+    padding: 16,
     borderRadius: 24,
+    marginBottom: 14,
+    borderWidth: 1,
+  },
+
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 14,
   },
+
   avatarText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 18,
   },
-  badge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: '#ff3b30',
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: '#ffffff',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  chatInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  chatHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
+
   chatName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#222',
   },
-  chatTime: {
-    fontSize: 12,
-    color: '#8e8e93',
-  },
-  activeTime: {
-    color: '#f53b75',
-    fontWeight: '600',
-  },
+
   lastMessage: {
-    fontSize: 13,
-    color: '#666',
     marginTop: 4,
   },
-  unreadMessage: {
-    color: '#1a1a1a',
-    fontWeight: '600',
-  },
-  itemTag: {
-    fontSize: 11,
-    color: '#8e8e93',
-    marginTop: 4,
-  },
-  // Active Chat styles
+
   activeContainer: {
     flex: 1,
-    backgroundColor: '#f6f6f9',
   },
+
   activeHeader: {
-    flexDirection: 'row',
     height: 64,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: 18,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e9',
-    paddingHorizontal: 8,
   },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 80,
-  },
-  backButtonText: {
-    fontSize: 14,
-    color: '#f53b75',
-    fontWeight: '600',
-    marginLeft: -2,
-  },
-  activeHeaderTitleContainer: {
-    alignItems: 'center',
-  },
-  activeHeaderName: {
-    fontSize: 16,
+
+  activeName: {
+    fontSize: 18,
     fontWeight: '700',
-    color: '#222',
   },
-  activeHeaderItem: {
-    fontSize: 11,
-    color: '#8e8e93',
-    marginTop: 2,
-  },
-  headerRightSpacer: {
-    width: 80,
-  },
-  messageScrollContent: {
-    padding: 16,
-    paddingBottom: 24,
-  },
-  messageRow: {
-    flexDirection: 'row',
+
+  msgRow: {
     marginBottom: 14,
     maxWidth: '80%',
   },
-  messageRowMe: {
-    alignSelf: 'flex-end',
-  },
-  messageRowThem: {
-    alignSelf: 'flex-start',
-  },
-  miniAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    alignSelf: 'flex-end',
-    marginBottom: 4,
-  },
-  miniAvatarText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
+
   bubble: {
-    borderRadius: 18,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 24,
+    borderWidth: 1,
   },
-  bubbleMe: {
-    backgroundColor: '#f53b75',
-    borderBottomRightRadius: 4,
-  },
-  bubbleThem: {
-    backgroundColor: '#ffffff',
-    borderBottomLeftRadius: 4,
-  },
-  bubbleText: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  bubbleTextMe: {
-    color: '#ffffff',
-  },
-  bubbleTextThem: {
-    color: '#222222',
-  },
-  msgTime: {
-    fontSize: 9,
-    alignSelf: 'flex-end',
-    marginTop: 4,
-  },
-  msgTimeMe: {
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  msgTimeThem: {
-    color: '#8e8e93',
-  },
-  inputContainer: {
+
+  inputBar: {
     flexDirection: 'row',
-    padding: 12,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e5e9',
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    padding: 12,
+    borderTopWidth: 1,
+    paddingBottom:
+      Platform.OS === 'ios'
+        ? 30
+        : 12,
   },
-  textInput: {
+
+  input: {
     flex: 1,
-    height: 40,
-    backgroundColor: '#f2f2f7',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: '#333',
-    marginRight: 10,
-    outlineStyle: 'none', // Remove web outline
+    height: 48,
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    fontSize: 15,
+    borderWidth: 1,
   },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f53b75',
+
+  sendBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginLeft: 10,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#ffb3ca',
   },
 });

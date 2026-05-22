@@ -1,4 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  memo,
+} from 'react';
+
 import {
   StyleSheet,
   Text,
@@ -10,396 +16,830 @@ import {
   PanResponder,
   Platform,
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+import {
+  SafeAreaView,
+} from 'react-native-safe-area-context';
 
-export default function SwipeScreen({ items, onLike, onDislike, onSelectDetail }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const position = useRef(new Animated.ValueXY()).current;
+const { width, height } =
+  Dimensions.get('window');
 
-  const currentItem = items[currentIndex];
+const COLORS = {
+  light: {
+    background: '#fff7f2',
+    card: '#ffffff',
+    text: '#111111',
+    subtext: '#777777',
+    accent: '#ff7a59',
+    border: '#ededf1',
+  },
 
-  const rotate = position.x.interpolate({
-    inputRange: [-width / 2, 0, width / 2],
-    outputRange: ['-10deg', '0deg', '10deg'],
-    extrapolate: 'clamp',
-  });
+  dark: {
+    background: '#121212',
+    card: '#1d1d1f',
+    text: '#ffffff',
+    subtext: '#aaaaaa',
+    accent: '#ff8c69',
+    border: '#2f2f32',
+  },
+};
 
-  const likeOpacity = position.x.interpolate({
-    inputRange: [0, width / 4],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
+const SwipeScreen = ({
+  items,
+  onLike,
+  onDislike,
+  onSelectDetail,
+  darkMode = false,
+}) => {
+  const theme = darkMode
+    ? COLORS.dark
+    : COLORS.light;
 
-  const dislikeOpacity = position.x.interpolate({
-    inputRange: [-width / 4, 0],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
+  const [currentIndex, setCurrentIndex] =
+    useState(0);
+
+  const position = useRef(
+    new Animated.ValueXY()
+  ).current;
+
+  const currentItem =
+    items[currentIndex];
+
+  const nextItem =
+    currentIndex + 1 <
+    items.length
+      ? items[currentIndex + 1]
+      : null;
+
+  // PREFETCH IMAGES
+  useEffect(() => {
+    if (nextItem?.image) {
+      Image.prefetch(
+        nextItem.image
+      );
+    }
+
+    if (
+      items[currentIndex + 2]
+        ?.image
+    ) {
+      Image.prefetch(
+        items[currentIndex + 2]
+          .image
+      );
+    }
+  }, [currentIndex]);
+
+  const rotate =
+    position.x.interpolate({
+      inputRange: [
+        -width / 2,
+        0,
+        width / 2,
+      ],
+
+      outputRange: [
+        '-12deg',
+        '0deg',
+        '12deg',
+      ],
+
+      extrapolate: 'clamp',
+    });
+
+  const likeOpacity =
+    position.x.interpolate({
+      inputRange: [0, width / 4],
+      outputRange: [0, 1],
+      extrapolate: 'clamp',
+    });
+
+  const nopeOpacity =
+    position.x.interpolate({
+      inputRange: [
+        -width / 4,
+        0,
+      ],
+
+      outputRange: [1, 0],
+
+      extrapolate: 'clamp',
+    });
+
+  const nextCardScale =
+    position.x.interpolate({
+      inputRange: [
+        -width / 2,
+        0,
+        width / 2,
+      ],
+
+      outputRange: [
+        1,
+        0.965,
+        1,
+      ],
+
+      extrapolate: 'clamp',
+    });
+
+  const nextCardOpacity =
+    position.x.interpolate({
+      inputRange: [
+        -width / 2,
+        0,
+        width / 2,
+      ],
+
+      outputRange: [
+        1,
+        0.75,
+        1,
+      ],
+
+      extrapolate: 'clamp',
+    });
+
+  const nextCard = () => {
+    position.setValue({
+      x: 0,
+      y: 0,
+    });
+
+    setCurrentIndex(
+      (prev) => prev + 1
+    );
+  };
+
+  const forceSwipe = (
+    direction
+  ) => {
+    const x =
+      direction === 'right'
+        ? width + 120
+        : -width - 120;
+
+    Animated.timing(position, {
+      toValue: { x, y: 0 },
+
+      duration: 180,
+
+      useNativeDriver: true,
+    }).start(() => {
+      direction === 'right'
+        ? onLike(currentItem)
+        : onDislike(currentItem);
+
+      nextCard();
+    });
+  };
+
+  const resetPosition = () => {
+    Animated.spring(position, {
+      toValue: { x: 0, y: 0 },
+
+      friction: 5,
+
+      tension: 40,
+
+      useNativeDriver: true,
+    }).start();
+  };
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        position.setValue({ x: gestureState.dx, y: gestureState.dy });
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        if (gestureState.dx > 120) {
-          // Swipe Right (Like)
-          Animated.timing(position, {
-            toValue: { x: width + 100, y: gestureState.dy },
-            duration: 250,
-            useNativeDriver: false,
-          }).start(() => {
-            onLike(currentItem);
-            nextCard();
+      onMoveShouldSetPanResponder:
+        (_, gesture) => {
+          return (
+            Math.abs(
+              gesture.dx
+            ) > 10
+          );
+        },
+
+      onPanResponderMove:
+        (_, gesture) => {
+          position.setValue({
+            x: gesture.dx,
+
+            y:
+              gesture.dy * 0.1,
           });
-        } else if (gestureState.dx < -120) {
-          // Swipe Left (Dislike)
-          Animated.timing(position, {
-            toValue: { x: -width - 100, y: gestureState.dy },
-            duration: 250,
-            useNativeDriver: false,
-          }).start(() => {
-            onDislike(currentItem);
-            nextCard();
-          });
-        } else {
-          // Snap back
-          Animated.spring(position, {
-            toValue: { x: 0, y: 0 },
-            friction: 4,
-            useNativeDriver: false,
-          }).start();
-        }
-      },
+        },
+
+      onPanResponderRelease:
+        (_, gesture) => {
+          if (
+            gesture.dx > 120 ||
+            gesture.vx > 1.25
+          ) {
+            forceSwipe(
+              'right'
+            );
+          } else if (
+            gesture.dx <
+              -120 ||
+            gesture.vx < -1.25
+          ) {
+            forceSwipe('left');
+          } else {
+            resetPosition();
+          }
+        },
     })
   ).current;
 
-  const nextCard = () => {
-    position.setValue({ x: 0, y: 0 });
-    setCurrentIndex((prev) => prev + 1);
-  };
-
-  const handlePressDislike = () => {
-    Animated.timing(position, {
-      toValue: { x: -width - 100, y: 0 },
-      duration: 250,
-      useNativeDriver: false,
-    }).start(() => {
-      onDislike(currentItem);
-      nextCard();
-    });
-  };
-
-  const handlePressLike = () => {
-    Animated.timing(position, {
-      toValue: { x: width + 100, y: 0 },
-      duration: 250,
-      useNativeDriver: false,
-    }).start(() => {
-      onLike(currentItem);
-      nextCard();
-    });
-  };
-
-  const handleReload = () => {
-    setCurrentIndex(0);
-  };
-
-  if (currentIndex >= items.length) {
+  if (
+    currentIndex >= items.length
+  ) {
     return (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="shirt-outline" size={80} color="#ccc" />
-        <Text style={styles.emptyTitle}>Keine Kleidung mehr in der Nähe</Text>
-        <Text style={styles.emptySubtitle}>
-          Passe deine Filter an oder versuche es später noch einmal.
+      <SafeAreaView
+        style={[
+          styles.emptyContainer,
+          {
+            backgroundColor:
+              theme.background,
+          },
+        ]}
+      >
+        <Ionicons
+          name="flame-outline"
+          size={70}
+          color="#888"
+        />
+
+        <Text
+          style={[
+            styles.emptyTitle,
+            {
+              color: theme.text,
+            },
+          ]}
+        >
+          Keine neuen Items
         </Text>
-        <Pressable style={styles.reloadButton} onPress={handleReload}>
-          <Text style={styles.reloadText}>Erneut starten</Text>
+
+        <Text
+          style={[
+            styles.emptySubtitle,
+            {
+              color:
+                theme.subtext,
+            },
+          ]}
+        >
+          Versuche es später
+          erneut.
+        </Text>
+
+        <Pressable
+          style={[
+            styles.reloadButton,
+            {
+              backgroundColor:
+                theme.accent,
+            },
+          ]}
+          onPress={() =>
+            setCurrentIndex(0)
+          }
+        >
+          <Text
+            style={
+              styles.reloadText
+            }
+          >
+            Neustarten
+          </Text>
         </Pressable>
-      </View>
+      </SafeAreaView>
     );
   }
 
-  const nextItem = currentIndex + 1 < items.length ? items[currentIndex + 1] : null;
-
   return (
-    <View style={styles.container}>
+    <SafeAreaView
+      edges={['top']}
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            theme.background,
+        },
+      ]}
+    >
       <View style={styles.cardArea}>
-        {/* Next Card (Background card) */}
         {nextItem && (
-          <View style={[styles.card, styles.backgroundCard]}>
-            <Image source={{ uri: nextItem.image }} style={styles.cardImage} />
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{nextItem.condition}</Text>
-            </View>
-            <View style={styles.infoBlock}>
-              <Text style={styles.titleText}>{nextItem.title}</Text>
-              <Text style={styles.detailsText}>
-                Größe: {nextItem.size}  •  {nextItem.brand}
-              </Text>
-              <View style={styles.ownerRow}>
-                <View style={[styles.avatar, { backgroundColor: nextItem.avatarColor }]}>
-                  <Text style={styles.avatarText}>{nextItem.owner[0]}</Text>
-                </View>
-                <Text style={styles.ownerName}>{nextItem.owner}</Text>
-              </View>
-            </View>
-          </View>
+          <Animated.View
+            style={[
+              styles.card,
+
+              {
+                backgroundColor:
+                  theme.card,
+
+                borderColor:
+                  theme.border,
+
+                opacity:
+                  nextCardOpacity,
+
+                transform: [
+                  {
+                    scale:
+                      nextCardScale,
+                  },
+                ],
+              },
+            ]}
+          >
+            <Image
+              source={{
+                uri: nextItem.image,
+              }}
+              style={
+                styles.cardImage
+              }
+              fadeDuration={0}
+            />
+          </Animated.View>
         )}
 
-        {/* Current Card (Foreground card) */}
         <Animated.View
-          {...(Platform.OS === 'web' ? {} : panResponder.panHandlers)}
+          {...panResponder.panHandlers}
           style={[
             styles.card,
+
             {
+              backgroundColor:
+                theme.card,
+
+              borderColor:
+                theme.border,
+
               transform: [
-                { translateX: position.x },
-                { translateY: position.y },
-                { rotate: rotate },
+                {
+                  translateX:
+                    position.x,
+                },
+
+                {
+                  translateY:
+                    position.y,
+                },
+
+                { rotate },
               ],
             },
           ]}
         >
-          <Pressable style={{ flex: 1 }} onPress={() => onSelectDetail(currentItem)}>
-            <Image source={{ uri: currentItem.image }} style={styles.cardImage} />
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{currentItem.condition}</Text>
-            </View>
+          <Pressable
+            style={{ flex: 1 }}
+            onPress={() =>
+              onSelectDetail(
+                currentItem
+              )
+            }
+          >
+            <Image
+              source={{
+                uri:
+                  currentItem.image,
+              }}
+              style={
+                styles.cardImage
+              }
+              fadeDuration={0}
+            />
 
-            {/* Like/Dislike indicator badges */}
-            <Animated.View style={[styles.likeLabel, { opacity: likeOpacity }]}>
-              <Text style={styles.likeLabelText}>GEFÄLLT MIR</Text>
-            </Animated.View>
-            <Animated.View style={[styles.dislikeLabel, { opacity: dislikeOpacity }]}>
-              <Text style={styles.dislikeLabelText}>NÄCHSTE</Text>
-            </Animated.View>
+            {/* LIKE */}
 
-            <View style={styles.infoBlock}>
-              <Text style={styles.titleText}>{currentItem.title}</Text>
-              <Text style={styles.detailsText}>
-                Größe: {currentItem.size}  •  {currentItem.brand}
+            <Animated.View
+              style={[
+                styles.likeBadge,
+
+                {
+                  opacity:
+                    likeOpacity,
+                },
+              ]}
+            >
+              <Text
+                style={
+                  styles.likeBadgeText
+                }
+              >
+                LIKE
               </Text>
-              <View style={styles.ownerRow}>
-                <View style={[styles.avatar, { backgroundColor: currentItem.avatarColor }]}>
-                  <Text style={styles.avatarText}>{currentItem.owner[0]}</Text>
+            </Animated.View>
+
+            {/* NOPE */}
+
+            <Animated.View
+              style={[
+                styles.nopeBadge,
+
+                {
+                  opacity:
+                    nopeOpacity,
+                },
+              ]}
+            >
+              <Text
+                style={
+                  styles.nopeBadgeText
+                }
+              >
+                NOPE
+              </Text>
+            </Animated.View>
+
+            {/* INFO */}
+
+            <View
+              style={
+                styles.infoContainer
+              }
+            >
+              <Text
+                style={styles.title}
+              >
+                {
+                  currentItem.title
+                }
+              </Text>
+
+              <Text
+                style={
+                  styles.details
+                }
+              >
+                {
+                  currentItem.brand
+                }{' '}
+                • Größe{' '}
+                {
+                  currentItem.size
+                }
+              </Text>
+
+              <View
+                style={
+                  styles.ownerRow
+                }
+              >
+                <View
+                  style={[
+                    styles.avatar,
+
+                    {
+                      backgroundColor:
+                        currentItem.avatarColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={
+                      styles.avatarText
+                    }
+                  >
+                    {
+                      currentItem
+                        .owner[0]
+                    }
+                  </Text>
                 </View>
-                <Text style={styles.ownerName}>{currentItem.owner}</Text>
+
+                <Text
+                  style={
+                    styles.ownerName
+                  }
+                >
+                  {
+                    currentItem.owner
+                  }
+                </Text>
               </View>
             </View>
           </Pressable>
         </Animated.View>
       </View>
 
-      {/* Button controls */}
-      <View style={styles.buttonContainer}>
-        <Pressable style={[styles.actionButton, styles.dislikeButton]} onPress={handlePressDislike}>
-          <Ionicons name="close" size={32} color="#ff4a4a" />
+      {/* BUTTONS */}
+
+      <View
+        style={
+          styles.bottomActions
+        }
+      >
+        <Pressable
+          style={
+            styles.smallButton
+          }
+          onPress={() =>
+            forceSwipe('left')
+          }
+        >
+          <Ionicons
+            name="close"
+            size={24}
+            color="#ff7a59"
+          />
         </Pressable>
-        <Pressable style={[styles.actionButton, styles.likeButton]} onPress={handlePressLike}>
-          <Ionicons name="heart" size={32} color="#f53b75" />
+
+        <Pressable
+          style={styles.bigButton}
+          onPress={() =>
+            forceSwipe(
+              'right'
+            )
+          }
+        >
+          <Ionicons
+            name="heart"
+            size={26}
+            color="#ff9a76"
+          />
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff7fa',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  cardArea: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 420,
-    aspectRatio: 0.72,
-    position: 'relative',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  card: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    top: 12,
-    bottom: 0,
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.03)',
-  },
-  backgroundCard: {
-    transform: [{ scale: 0.96 }, { translateY: 10 }],
-    opacity: 0.9,
-  },
-  cardImage: {
-    width: '100%',
-    height: '68%',
-    resizeMode: 'cover',
-  },
-  badgeContainer: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-  },
-  infoBlock: {
-    padding: 20,
-    justifyContent: 'space-between',
-    height: '32%',
-  },
-  titleText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a1a',
-  },
-  detailsText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  ownerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  avatarText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  ownerName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#444',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    paddingBottom: 20,
-    marginTop: 16,
-  },
-  actionButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  dislikeButton: {
-    borderWidth: 1,
-    borderColor: '#ffeaea',
-  },
-  likeButton: {
-    borderWidth: 1,
-    borderColor: '#ffe8f0',
-  },
-  likeLabel: {
-    position: 'absolute',
-    top: 40,
-    left: 40,
-    borderWidth: 3,
-    borderColor: '#4cd964',
-    padding: 8,
-    borderRadius: 8,
-    transform: [{ rotate: '-15deg' }],
-  },
-  likeLabelText: {
-    color: '#4cd964',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  dislikeLabel: {
-    position: 'absolute',
-    top: 40,
-    right: 40,
-    borderWidth: 3,
-    borderColor: '#ff3b30',
-    padding: 8,
-    borderRadius: 8,
-    transform: [{ rotate: '15deg' }],
-  },
-  dislikeLabelText: {
-    color: '#ff3b30',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#fff7fa',
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#777',
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  reloadButton: {
-    backgroundColor: '#f53b75',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-    shadowColor: '#f53b75',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-  },
-  reloadText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-});
+export default memo(
+  SwipeScreen
+);
+
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+
+    cardArea: {
+      flex: 1,
+
+      justifyContent:
+        'center',
+
+      alignItems: 'center',
+
+      paddingTop:
+        Platform.OS ===
+        'ios'
+          ? 42
+          : 12,
+    },
+
+    card: {
+      width: width - 24,
+
+      height: height * 0.74,
+
+      borderRadius: 28,
+
+      overflow: 'hidden',
+
+      position: 'absolute',
+
+      borderWidth: 1,
+
+      renderToHardwareTextureAndroid: true,
+
+      shouldRasterizeIOS: true,
+    },
+
+    cardImage: {
+      width: '100%',
+      height: '100%',
+    },
+
+    likeBadge: {
+      position: 'absolute',
+
+      top: 115,
+
+      left: 24,
+
+      borderWidth: 5,
+
+      borderColor:
+        '#ffb089',
+
+      paddingHorizontal: 16,
+
+      paddingVertical: 10,
+
+      borderRadius: 12,
+
+      transform: [
+        {
+          rotate: '-14deg',
+        },
+      ],
+    },
+
+    likeBadgeText: {
+      color: '#ffb089',
+
+      fontSize: 34,
+
+      fontWeight: '900',
+    },
+
+    nopeBadge: {
+      position: 'absolute',
+
+      top: 115,
+
+      right: 24,
+
+      borderWidth: 5,
+
+      borderColor:
+        '#ff7a59',
+
+      paddingHorizontal: 16,
+
+      paddingVertical: 10,
+
+      borderRadius: 12,
+
+      transform: [
+        {
+          rotate: '14deg',
+        },
+      ],
+    },
+
+    nopeBadgeText: {
+      color: '#ff7a59',
+
+      fontSize: 34,
+
+      fontWeight: '900',
+    },
+
+    infoContainer: {
+      position: 'absolute',
+
+      bottom: 28,
+
+      left: 24,
+
+      right: 24,
+    },
+
+    title: {
+      color: '#fff',
+
+      fontSize: 34,
+
+      fontWeight: '800',
+    },
+
+    details: {
+      marginTop: 6,
+
+      color: '#fff',
+
+      fontSize: 15,
+
+      opacity: 0.9,
+    },
+
+    ownerRow: {
+      flexDirection: 'row',
+
+      alignItems: 'center',
+
+      marginTop: 18,
+    },
+
+    avatar: {
+      width: 38,
+
+      height: 38,
+
+      borderRadius: 19,
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center',
+
+      marginRight: 10,
+    },
+
+    avatarText: {
+      color: '#fff',
+
+      fontWeight: '700',
+    },
+
+    ownerName: {
+      color: '#fff',
+
+      fontSize: 15,
+
+      fontWeight: '600',
+    },
+
+    bottomActions: {
+      flexDirection: 'row',
+
+      justifyContent:
+        'center',
+
+      alignItems: 'center',
+
+      paddingBottom:
+        Platform.OS ===
+        'ios'
+          ? 36
+          : 20,
+
+      marginTop: 12,
+    },
+
+    smallButton: {
+      width: 52,
+
+      height: 52,
+
+      borderRadius: 26,
+
+      backgroundColor:
+        '#fff',
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center',
+
+      marginHorizontal: 18,
+    },
+
+    bigButton: {
+      width: 58,
+
+      height: 58,
+
+      borderRadius: 29,
+
+      backgroundColor:
+        '#fff',
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center',
+
+      marginHorizontal: 18,
+    },
+
+    emptyContainer: {
+      flex: 1,
+
+      justifyContent:
+        'center',
+
+      alignItems: 'center',
+    },
+
+    emptyTitle: {
+      fontSize: 28,
+
+      fontWeight: '800',
+
+      marginTop: 18,
+    },
+
+    emptySubtitle: {
+      marginTop: 8,
+
+      fontSize: 15,
+    },
+
+    reloadButton: {
+      marginTop: 26,
+
+      paddingHorizontal: 26,
+
+      paddingVertical: 14,
+
+      borderRadius: 20,
+    },
+
+    reloadText: {
+      color: '#fff',
+
+      fontWeight: '700',
+
+      fontSize: 15,
+    },
+  });
