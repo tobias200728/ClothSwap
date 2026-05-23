@@ -21,7 +21,7 @@ import TabBar from './components/TabBar';
 import SwipeScreen from './components/SwipeScreen';
 import FavoritesScreen from './components/FavoritesScreen';
 import ChatScreen from './components/ChatScreen';
-import ProfileScreen from './components/ProfileScreen';
+import ProfileScreen from './components/ProfilePage/ProfileScreen';
 import DetailModal from './components/DetailModal';
 
 // Mock Data

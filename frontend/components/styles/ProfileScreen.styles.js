@@ -317,7 +317,6 @@ export const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 12,
     position: 'relative',
-    overflow: 'hidden',
   },
 
   planCardHeader: {
@@ -433,6 +432,32 @@ export const styles = StyleSheet.create({
     opacity: 0.5,
   },
   secureText: { fontSize: 12 },
+
+  // ─── Settings sheet (bottom sheet variant) ────────────────────────────────
+  settingsSheet: {
+    width: '100%',
+    maxHeight: '92%',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+
+  settingsDragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+
+  settingsInnerScroll: {
+    padding: 24,
+    paddingBottom: 40,
+  },
 
   // ─── Success overlay ───────────────────────────────────────────────────────
   successOverlay: {
