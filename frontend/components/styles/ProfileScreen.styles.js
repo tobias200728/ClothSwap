@@ -442,7 +442,6 @@ export const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     borderWidth: 1,
-    overflow: 'hidden',
   },
 
   settingsDragHandle: {
