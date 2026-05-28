@@ -4,14 +4,17 @@
     "slug": "clothswap-frontend",
     "version": "1.0.0",
     "platforms": ["ios", "android", "web"],
-    "sdkVersion": "54.0.0",
+    "sdkVersion": "52.0.0",
     "orientation": "portrait",
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
+    },
+    "android": {},
+    "extra": {
+      "eas": {
+        "projectId": "8a5d182a-2074-4f70-bd77-92630a2fb75f"
+      }
     }
   }
 }
