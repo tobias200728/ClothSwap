@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import {
   Text,
@@ -8,12 +8,13 @@ import {
   Pressable,
   Modal,
   TextInput,
+  Alert,
+  Platform,
 } from 'react-native';
 
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   COLORS,
@@ -55,29 +56,105 @@ function SuccessOverlay({ plan, visible, onClose, darkMode }) {
   );
 }
 
+// ─── Bottom-sheet wrapper ─────────────────────────────────────────────────────
+
+function Sheet({ visible, onClose, title, children, theme, insets }) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable
+        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}
+        onPress={onClose}
+      >
+        <Pressable
+          onPress={() => {}}
+          style={{
+            backgroundColor: theme.card,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            maxHeight: '92%',
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 20,
+          }}
+        >
+          {/* Drag handle */}
+          <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
+            <View style={{ width: 38, height: 4, borderRadius: 2, backgroundColor: theme.border }} />
+          </View>
+
+          {/* Header */}
+          <View style={{
+            flexDirection: 'row', alignItems: 'center',
+            paddingHorizontal: 22, paddingVertical: 12,
+            borderBottomWidth: 1, borderBottomColor: theme.border,
+          }}>
+            <Text style={{ flex: 1, fontSize: 20, fontWeight: '800', color: theme.text }}>
+              {title}
+            </Text>
+            <Pressable
+              onPress={onClose}
+              style={{
+                width: 34, height: 34, borderRadius: 17,
+                backgroundColor: 'rgba(128,128,128,0.12)',
+                justifyContent: 'center', alignItems: 'center',
+              }}
+            >
+              <Ionicons name="close" size={20} color={theme.text} />
+            </Pressable>
+          </View>
+
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: 22, paddingBottom: 12 }}
+          >
+            {children}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ProfileScreen({
   userItems,
   onAddItem,
+  onUpdateItem,
+  onDeleteItem,
   userProfile,
   onUpdateProfile,
+  onLogout,
   darkMode,
   setDarkMode,
 }) {
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const insets = useSafeAreaInsets();
 
   // Add modal
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [newSize, setNewSize] = useState('M');
   const [uploadedImage, setUploadedImage] = useState(null);
+
+  // Edit modal
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editSize, setEditSize] = useState('M');
+  const [editStatus, setEditStatus] = useState('Verfügbar');
+  const [editImage, setEditImage] = useState(null);
 
   // Settings modal
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [editName, setEditName] = useState(userProfile.name);
   const [editLocation, setEditLocation] = useState(userProfile.location);
   const [profileImage, setProfileImage] = useState(userProfile.image || null);
+
+  useEffect(() => {
+    setProfileImage(userProfile.image || null);
+  }, [userProfile.image]);
 
   // Plan & payment
   const [activePlan, setActivePlan] = useState(userProfile.plan || null);
@@ -99,15 +176,58 @@ export default function ProfileScreen({
   const handleCreateItem = () => {
     if (!newTitle.trim()) return;
     onAddItem({
-      id: `item_${Date.now()}`,
       title: newTitle,
+      description: newDescription,
       size: newSize,
+      brand: '',
+      condition: 'Gut',
       status: 'Verfügbar',
-      image: uploadedImage || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab',
+      image: uploadedImage || null,
     });
     setAddModalVisible(false);
     setNewTitle('');
+    setNewDescription('');
     setUploadedImage(null);
+  };
+
+  const openEditModal = (item) => {
+    setEditingItem(item);
+    setEditTitle(item.title);
+    setEditDescription(item.description || '');
+    setEditSize(item.size || 'M');
+    setEditStatus(item.status || 'Verfügbar');
+    setEditImage(item.image || null);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editTitle.trim()) return;
+    onUpdateItem(editingItem.id, {
+      title: editTitle,
+      description: editDescription,
+      size: editSize,
+      status: editStatus,
+      image: editImage,
+    });
+    setEditModalVisible(false);
+  };
+
+  const handleConfirmDelete = () => {
+    Alert.alert(
+      'Artikel löschen',
+      `"${editingItem?.title}" wirklich löschen?`,
+      [
+        { text: 'Abbrechen', style: 'cancel' },
+        {
+          text: 'Löschen',
+          style: 'destructive',
+          onPress: () => {
+            onDeleteItem(editingItem.id);
+            setEditModalVisible(false);
+          },
+        },
+      ]
+    );
   };
 
   const handleSaveSettings = () => {
@@ -123,14 +243,20 @@ export default function ProfileScreen({
 
   const activePlanData = PLANS.find((p) => p.id === activePlan);
 
+  const inputStyle = [styles.input, {
+    backgroundColor: theme.input,
+    color: theme.text,
+    borderColor: theme.border,
+  }];
+
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView edges={[]} style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* ── HEADER ── */}
-        <View style={[styles.header, { backgroundColor: theme.accent }]}>
+        <View style={[styles.header, { backgroundColor: theme.accent, paddingTop: 12 }]}>
           <Pressable
-            style={[styles.settingsBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}
+            style={[styles.settingsBtn, { backgroundColor: 'rgba(255,255,255,0.22)', top: 12 }]}
             onPress={() => setSettingsModalVisible(true)}
           >
             <Ionicons name="settings-outline" size={22} color="#fff" />
@@ -173,76 +299,178 @@ export default function ProfileScreen({
 
         <View style={styles.grid}>
           {userItems.map((item) => (
-            <View
+            <Pressable
               key={item.id}
               style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
+              onPress={() => openEditModal(item)}
             >
               <Image source={{ uri: item.image }} style={styles.cardImage} />
+              <View style={styles.cardEditOverlay}>
+                <Ionicons name="pencil" size={16} color="#fff" />
+              </View>
               <View style={styles.cardInfo}>
                 <Text style={[styles.cardTitle, { color: theme.text }]}>{item.title}</Text>
                 <Text style={[styles.cardSize, { color: theme.subtext }]}>Größe {item.size}</Text>
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       </ScrollView>
 
-      {/* ══ ADD ITEM MODAL ══ */}
-      <Modal visible={addModalVisible} transparent animationType="fade">
-        <BlurView intensity={45} tint={darkMode ? 'dark' : 'light'} style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Kleidung hinzufügen</Text>
-              <Pressable onPress={() => setAddModalVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </Pressable>
-            </View>
+      {/* ══ ADD ITEM SHEET ══ */}
+      <Sheet
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
+        title="Kleidung hinzufügen"
+        theme={theme}
+        insets={insets}
+      >
+        <TextInput
+          placeholder="Titel"
+          placeholderTextColor={theme.subtext}
+          value={newTitle}
+          onChangeText={setNewTitle}
+          style={inputStyle}
+        />
+        <TextInput
+          placeholder="Beschreibung (optional)"
+          placeholderTextColor={theme.subtext}
+          value={newDescription}
+          onChangeText={setNewDescription}
+          multiline
+          numberOfLines={3}
+          style={[inputStyle, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+        />
 
-            <TextInput
-              placeholder="Titel"
-              placeholderTextColor={theme.subtext}
-              value={newTitle}
-              onChangeText={setNewTitle}
-              style={[styles.input, { backgroundColor: theme.input, color: theme.text, borderColor: theme.border }]}
+        <Pressable
+          style={[styles.uploadButton, { backgroundColor: theme.softAccent }]}
+          onPress={() => pickImage(setUploadedImage)}
+        >
+          <Ionicons name="image-outline" size={22} color={theme.accent} />
+          <Text style={{ color: theme.accent, marginLeft: 8, fontWeight: '700' }}>
+            {uploadedImage ? 'Bild ändern' : 'Bild hochladen'}
+          </Text>
+        </Pressable>
+
+        {uploadedImage && (
+          <Image source={{ uri: uploadedImage }} style={[styles.previewImage, { height: 160 }]} />
+        )}
+
+        <Text style={[styles.sectionLabel, { color: theme.subtext }]}>Größe</Text>
+        <View style={styles.selectorRow}>
+          {['XS', 'S', 'M', 'L', 'XL'].map((size) => (
+            <Pressable
+              key={size}
+              style={[styles.selectorBtn, newSize === size && { backgroundColor: theme.accent }]}
+              onPress={() => setNewSize(size)}
+            >
+              <Text style={{ color: newSize === size ? '#fff' : theme.text }}>{size}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable
+          style={[styles.submitBtn, { backgroundColor: theme.accent }]}
+          onPress={handleCreateItem}
+        >
+          <Text style={styles.submitBtnText}>Hinzufügen</Text>
+        </Pressable>
+      </Sheet>
+
+      {/* ══ EDIT ITEM SHEET ══ */}
+      <Sheet
+        visible={editModalVisible}
+        onClose={() => setEditModalVisible(false)}
+        title="Artikel bearbeiten"
+        theme={theme}
+        insets={insets}
+      >
+        {/* Image row: thumbnail + change button side by side */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 14 }}>
+          {editImage ? (
+            <Image
+              source={{ uri: editImage }}
+              style={{ width: 80, height: 80, borderRadius: 16 }}
+              resizeMode="cover"
             />
-
-            <Pressable
-              style={[styles.uploadButton, { backgroundColor: theme.softAccent }]}
-              onPress={() => pickImage(setUploadedImage)}
-            >
-              <Ionicons name="image-outline" size={22} color={theme.accent} />
-              <Text style={{ color: theme.accent, marginLeft: 8, fontWeight: '700' }}>
-                Bild hochladen
-              </Text>
-            </Pressable>
-
-            {uploadedImage && (
-              <Image source={{ uri: uploadedImage }} style={styles.previewImage} />
-            )}
-
-            <View style={styles.selectorRow}>
-              {['XS', 'S', 'M', 'L', 'XL'].map((size) => (
-                <Pressable
-                  key={size}
-                  style={[styles.selectorBtn, newSize === size && { backgroundColor: theme.accent }]}
-                  onPress={() => setNewSize(size)}
-                >
-                  <Text style={{ color: newSize === size ? '#fff' : theme.text }}>{size}</Text>
-                </Pressable>
-              ))}
+          ) : (
+            <View style={{
+              width: 80, height: 80, borderRadius: 16,
+              backgroundColor: theme.input, borderWidth: 1, borderColor: theme.border,
+              justifyContent: 'center', alignItems: 'center',
+            }}>
+              <Ionicons name="shirt-outline" size={32} color={theme.subtext} />
             </View>
+          )}
+          <Pressable
+            style={[styles.uploadButton, { flex: 1, marginBottom: 0, backgroundColor: theme.softAccent }]}
+            onPress={() => pickImage(setEditImage)}
+          >
+            <Ionicons name="image-outline" size={20} color={theme.accent} />
+            <Text style={{ color: theme.accent, marginLeft: 8, fontWeight: '700' }}>Bild ändern</Text>
+          </Pressable>
+        </View>
 
+        <TextInput
+          placeholder="Titel"
+          placeholderTextColor={theme.subtext}
+          value={editTitle}
+          onChangeText={setEditTitle}
+          style={inputStyle}
+        />
+        <TextInput
+          placeholder="Beschreibung (optional)"
+          placeholderTextColor={theme.subtext}
+          value={editDescription}
+          onChangeText={setEditDescription}
+          multiline
+          numberOfLines={3}
+          style={[inputStyle, { height: 76, textAlignVertical: 'top', paddingTop: 12 }]}
+        />
+
+        <Text style={[styles.sectionLabel, { color: theme.subtext }]}>Größe</Text>
+        <View style={styles.selectorRow}>
+          {['XS', 'S', 'M', 'L', 'XL'].map((size) => (
             <Pressable
-              style={[styles.submitBtn, { backgroundColor: theme.accent }]}
-              onPress={handleCreateItem}
+              key={size}
+              style={[styles.selectorBtn, editSize === size && { backgroundColor: theme.accent }]}
+              onPress={() => setEditSize(size)}
             >
-              <Text style={styles.submitBtnText}>Hinzufügen</Text>
+              <Text style={{ color: editSize === size ? '#fff' : theme.text }}>{size}</Text>
             </Pressable>
-          </View>
-        </BlurView>
-      </Modal>
+          ))}
+        </View>
 
-      {/* ══ SETTINGS MODAL (ausgelagert) ══ */}
+        <Text style={[styles.sectionLabel, { color: theme.subtext }]}>Status</Text>
+        <View style={[styles.selectorRow, { marginBottom: 20 }]}>
+          {['Verfügbar', 'Reserviert', 'Getauscht'].map((s) => (
+            <Pressable
+              key={s}
+              style={[styles.selectorBtn, editStatus === s && { backgroundColor: theme.accent }]}
+              onPress={() => setEditStatus(s)}
+            >
+              <Text style={{ color: editStatus === s ? '#fff' : theme.text, fontSize: 12 }}>{s}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable
+          style={[styles.submitBtn, { backgroundColor: theme.accent }]}
+          onPress={handleSaveEdit}
+        >
+          <Text style={styles.submitBtnText}>Speichern</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.deleteBtn, { backgroundColor: theme.danger }]}
+          onPress={handleConfirmDelete}
+        >
+          <Ionicons name="trash-outline" size={18} color="#fff" />
+          <Text style={styles.deleteBtnText}>Artikel löschen</Text>
+        </Pressable>
+      </Sheet>
+
+      {/* ══ SETTINGS MODAL ══ */}
       <SettingsModal
         visible={settingsModalVisible}
         onClose={() => setSettingsModalVisible(false)}
@@ -257,6 +485,7 @@ export default function ProfileScreen({
         activePlan={activePlan}
         onPaymentSuccess={handlePaymentSuccess}
         onSave={handleSaveSettings}
+        onLogout={onLogout}
       />
 
       {/* ══ SUCCESS OVERLAY ══ */}

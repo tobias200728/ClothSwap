@@ -73,8 +73,7 @@ export const styles = StyleSheet.create({
 
   header: {
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 18 : 28,
-    paddingBottom: 34,
+    paddingBottom: 24,
     borderBottomLeftRadius: 34,
     borderBottomRightRadius: 34,
   },
@@ -82,7 +81,6 @@ export const styles = StyleSheet.create({
   settingsBtn: {
     position: 'absolute',
     right: 20,
-    top: Platform.OS === 'ios' ? 20 : 24,
     width: 42,
     height: 42,
     borderRadius: 21,
@@ -92,7 +90,7 @@ export const styles = StyleSheet.create({
 
   // ─── Avatar ────────────────────────────────────────────────────────────────
   avatarWrapper: {
-    marginTop: 20,
+    marginTop: 10,
     position: 'relative',
   },
 
@@ -131,8 +129,8 @@ export const styles = StyleSheet.create({
     borderColor: '#fff',
   },
 
-  name: { fontSize: 28, fontWeight: '800', marginTop: 14, color: '#fff' },
-  location: { marginTop: 6, fontSize: 15, color: '#fff' },
+  name: { fontSize: 28, fontWeight: '800', marginTop: 10, color: '#fff' },
+  location: { marginTop: 4, fontSize: 15, color: '#fff' },
 
   activePlanBadge: {
     marginTop: 10,
@@ -149,7 +147,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginTop: 26,
+    marginTop: 16,
   },
 
   sectionTitle: { fontSize: 22, fontWeight: '800' },
@@ -181,6 +179,29 @@ export const styles = StyleSheet.create({
   cardInfo: { padding: 14 },
   cardTitle: { fontSize: 16, fontWeight: '700' },
   cardSize: { marginTop: 4 },
+
+  cardEditOverlay: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  deleteBtn: {
+    height: 52,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  deleteBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 
   // ─── Modal shared ──────────────────────────────────────────────────────────
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },

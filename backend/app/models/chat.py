@@ -28,3 +28,5 @@ class ChatResponse(BaseModel):
     last_message: str
     time: str
     messages: List[MessageResponse] = []
+    other_user_id: Optional[str] = None
+    other_profile_image: Optional[str] = None

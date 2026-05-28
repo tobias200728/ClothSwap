@@ -30,12 +30,12 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 42 : 12,
+    paddingTop: 8,
   },
 
   card: {
     width: width - 24,
-    height: height * 0.74,
+    height: height * 0.61,
     borderRadius: 28,
     overflow: 'hidden',
     position: 'absolute',
@@ -135,8 +135,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 36 : 20,
-    marginTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+    paddingTop: 14,
   },
 
   smallButton: {

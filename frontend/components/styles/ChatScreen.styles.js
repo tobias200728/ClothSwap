@@ -30,7 +30,8 @@ export const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '800',
-    marginVertical: 18,
+    marginTop: 6,
+    marginBottom: 14,
   },
 
   chatRow: {

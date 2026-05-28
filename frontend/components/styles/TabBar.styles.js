@@ -46,4 +46,23 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
+
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#e53935',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
 });

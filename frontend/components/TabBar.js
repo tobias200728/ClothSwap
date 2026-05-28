@@ -12,7 +12,7 @@ const TABS = [
   { id: 'profile',   label: 'Profil', iconOutline: 'person-outline',     iconFilled: 'person' },
 ];
 
-export default function TabBar({ activeTab, setActiveTab, darkMode }) {
+export default function TabBar({ activeTab, setActiveTab, darkMode, unreadCount = 0 }) {
   const colors = darkMode ? COLORS.dark : COLORS.light;
 
   return (
@@ -26,19 +26,21 @@ export default function TabBar({ activeTab, setActiveTab, darkMode }) {
     >
       {TABS.map((tab) => {
         const isActive = activeTab === tab.id;
+        const showBadge = tab.id === 'chat' && unreadCount > 0;
+
         return (
           <Pressable key={tab.id} style={styles.tabItem} onPress={() => setActiveTab(tab.id)}>
-            <View
-              style={[
-                styles.iconContainer,
-                isActive && { backgroundColor: colors.accent + '20' },
-              ]}
-            >
+            <View style={[styles.iconContainer, isActive && { backgroundColor: colors.accent + '20' }]}>
               <Ionicons
                 name={isActive ? tab.iconFilled : tab.iconOutline}
                 size={22}
                 color={isActive ? colors.accent : colors.inactive}
               />
+              {showBadge && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                </View>
+              )}
             </View>
             <Text style={[styles.tabLabel, { color: isActive ? colors.accent : colors.inactive }]}>
               {tab.label}

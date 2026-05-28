@@ -5,8 +5,9 @@ import uuid
 import random
 
 from app.models.user import UserRegister, UserLogin, TokenResponse, UserProfileResponse
-from app.database import db, hash_password, verify_password
+from app.database import hash_password, verify_password
 from app.dependencies import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_DAYS
+from app.supabase_client import supabase
 
 router = APIRouter(prefix="/auth", tags=["Authentifizierung"])
 
@@ -32,12 +33,12 @@ def user_to_profile(user: dict) -> UserProfileResponse:
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
 async def register(data: UserRegister):
-    for user in db.users.values():
-        if user["email"] == data.email:
-            raise HTTPException(status_code=400, detail="E-Mail bereits registriert")
+    existing = supabase.table("users").select("id").eq("email", data.email).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="E-Mail bereits registriert")
 
     user_id = str(uuid.uuid4())
-    db.users[user_id] = {
+    new_user = {
         "id": user_id,
         "email": data.email,
         "username": data.username,
@@ -47,20 +48,21 @@ async def register(data: UserRegister):
         "avatar_color": random.choice(AVATAR_COLORS),
         "profile_image": None,
     }
-    db.likes[user_id] = []
-    db.dislikes[user_id] = []
-
+    result = supabase.table("users").insert(new_user).execute()
     return TokenResponse(
         access_token=create_access_token(user_id),
-        user=user_to_profile(db.users[user_id]),
+        user=user_to_profile(result.data[0]),
     )
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin):
-    user = next((u for u in db.users.values() if u["email"] == data.email), None)
+    result = supabase.table("users").select("*").eq("email", data.email).execute()
+    if not result.data:
+        raise HTTPException(status_code=401, detail="E-Mail oder Passwort falsch")
 
-    if not user or not verify_password(data.password, user["password_hash"]):
+    user = result.data[0]
+    if not verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="E-Mail oder Passwort falsch")
 
     return TokenResponse(

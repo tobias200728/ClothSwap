@@ -193,9 +193,13 @@ const SwipeScreen = ({
                 {currentItem.brand} • Größe {currentItem.size}
               </Text>
               <View style={styles.ownerRow}>
-                <View style={[styles.avatar, { backgroundColor: currentItem.avatarColor }]}>
-                  <Text style={styles.avatarText}>{currentItem.owner[0]}</Text>
-                </View>
+                {currentItem.ownerImage ? (
+                  <Image source={{ uri: currentItem.ownerImage }} style={[styles.avatar, { overflow: 'hidden' }]} />
+                ) : (
+                  <View style={[styles.avatar, { backgroundColor: currentItem.avatarColor }]}>
+                    <Text style={styles.avatarText}>{(currentItem.owner || '?')[0]}</Text>
+                  </View>
+                )}
                 <Text style={styles.ownerName}>{currentItem.owner}</Text>
               </View>
             </View>

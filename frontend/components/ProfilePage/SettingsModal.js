@@ -40,6 +40,7 @@ export default function SettingsModal({
   activePlan,
   onPaymentSuccess,
   onSave,
+  onLogout,
 }) {
   const theme = darkMode ? COLORS.dark : COLORS.light;
 
@@ -188,6 +189,13 @@ export default function SettingsModal({
 
                   <Pressable style={[styles.submitBtn, { backgroundColor: theme.accent }]} onPress={onSave}>
                     <Text style={styles.submitBtnText}>Speichern</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.submitBtn, { backgroundColor: '#e53935', marginTop: 10 }]}
+                    onPress={() => { handleClose(); onLogout?.(); }}
+                  >
+                    <Text style={styles.submitBtnText}>Abmelden</Text>
                   </Pressable>
                 </>
               )}

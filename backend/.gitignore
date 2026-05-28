@@ -9,5 +9,8 @@ venv/
 .venv/
 env/
 
+# Environment variables (never commit these!)
+.env
+
 # IDE files
 .vscode/
