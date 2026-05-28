@@ -76,8 +76,14 @@ export default function App() {
       await saveUser(updatedUser);
     } catch (e) {
       console.error('Fehler beim Laden der Daten:', e);
+      const msg = e?.message || '';
+      // Auth errors → clear session and force re-login
+      if (msg.includes('401') || msg.toLowerCase().includes('zugangsdaten') || msg.toLowerCase().includes('token')) {
+        await handleLogout();
+        return;
+      }
+      // Server cold start → retry once after 6s
       if (retry) {
-        // Server may be waking from sleep (cold start) — retry once after 6s
         await new Promise((res) => setTimeout(res, 6000));
         await loadInitialData(userId, false);
       }
